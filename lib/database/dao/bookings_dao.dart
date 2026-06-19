@@ -89,6 +89,12 @@ class BookingsDao extends DatabaseAccessor<AppDatabase>
     return rows.fold<double>(0.0, (s, b) => s + (b.sellingPrice - b.totalCost));
   }
 
+  Stream<double> watchTotalProfits() {
+    final profitSum = CustomExpression<double>('SUM(selling_price - total_cost)');
+    final q = selectOnly(bookings)..addColumns([profitSum]);
+    return q.watchSingle().map((row) => row.read(profitSum) ?? 0.0);
+  }
+
   Future<void> insertBooking(BookingsCompanion b) async {
     await into(bookings).insert(b);
     final row = await (select(bookings)..where((tbl) => tbl.id.equals(b.id.value))).getSingleOrNull();

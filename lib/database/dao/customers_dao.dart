@@ -36,8 +36,16 @@ class CustomersDao extends DatabaseAccessor<AppDatabase>
 
   Future<List<Customer>> getDebtors() =>
       (select(customers)
-        ..where((c) => c.balance.isSmallerThanValue(0)))
+        ..where((c) => c.balance.isBiggerThanValue(0)))
       .get();
+
+  Stream<double> watchTotalDebts() {
+    final sum = customers.balance.sum();
+    final q = selectOnly(customers)
+      ..addColumns([sum])
+      ..where(customers.balance.isBiggerThanValue(0));
+    return q.watchSingle().map((row) => row.read(sum) ?? 0.0);
+  }
 
   Future<int> getCount() async {
     final count = customers.id.count();

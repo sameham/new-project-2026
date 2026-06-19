@@ -14,9 +14,9 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final customerCount  = ref.watch(customerCountProvider);
-    final todayRevenue   = ref.watch(todayRevenueProvider);
+    final profits        = ref.watch(profitsProvider);
     final monthRevenue   = ref.watch(monthRevenueProvider);
-    final monthExpenses  = ref.watch(monthExpensesProvider);
+    final totalDebts     = ref.watch(totalDebtsProvider);
     final statusCounts   = ref.watch(bookingStatusCountsProvider);
     final upcoming       = ref.watch(upcomingBookingsProvider);
     final fmt = NumberFormat('#,##0.00', 'ar');
@@ -47,9 +47,9 @@ class DashboardScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(customerCountProvider);
-          ref.invalidate(todayRevenueProvider);
+          ref.invalidate(profitsProvider);
           ref.invalidate(monthRevenueProvider);
-          ref.invalidate(monthExpensesProvider);
+          ref.invalidate(totalDebtsProvider);
           ref.invalidate(bookingStatusCountsProvider);
           ref.invalidate(upcomingBookingsProvider);
         },
@@ -70,11 +70,11 @@ class DashboardScreen extends ConsumerWidget {
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _KpiCard(
-                  label: 'تحصيل اليوم',
-                  value: todayRevenue.when(data: (v) => '${fmt.format(v)} ج.م', loading: () => '...', error: (_, __) => '—'),
-                  icon: Icons.today,
+                  label: 'الأرباح',
+                  value: profits.when(data: (v) => '${fmt.format(v)} ج.م', loading: () => '...', error: (_, __) => '—'),
+                  icon: Icons.monetization_on,
                   color: AppColors.success,
-                  onTap: () => context.go('/payments'),
+                  onTap: () => context.push('/reports/sales'),
                 )),
               ]),
               const SizedBox(height: 12),
@@ -88,11 +88,11 @@ class DashboardScreen extends ConsumerWidget {
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _KpiCard(
-                  label: 'مصروفات الشهر',
-                  value: monthExpenses.when(data: (v) => '${fmt.format(v)} ج.م', loading: () => '...', error: (_, __) => '—'),
-                  icon: Icons.receipt_long,
-                  color: AppColors.error,
-                  onTap: () => context.push('/expenses'),
+                  label: 'المتبقي على العملاء',
+                  value: totalDebts.when(data: (v) => '${fmt.format(v)} ج.م', loading: () => '...', error: (_, __) => '—'),
+                  icon: Icons.account_balance_wallet,
+                  color: AppColors.warning,
+                  onTap: () => context.push('/reports/debtors'),
                 )),
               ]),
               const SizedBox(height: 20),

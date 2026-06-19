@@ -8,8 +8,8 @@ final customerCountProvider = StreamProvider<int>((ref) {
   return ref.watch(databaseProvider).customersDao.watchCount();
 });
 
-final todayRevenueProvider = StreamProvider<double>((ref) {
-  return ref.watch(databaseProvider).paymentsDao.watchTodayTotal();
+final profitsProvider = StreamProvider<double>((ref) {
+  return ref.watch(databaseProvider).bookingsDao.watchTotalProfits();
 });
 
 final monthRevenueProvider = StreamProvider<double>((ref) {
@@ -24,6 +24,6 @@ final bookingStatusCountsProvider = StreamProvider<Map<String, int>>((ref) {
   return ref.watch(databaseProvider).bookingsDao.watchStatusCounts();
 });
 
-final monthExpensesProvider = StreamProvider<double>((ref) {
-  return ref.watch(databaseProvider).expensesDao.watchMonthTotal();
+final totalDebtsProvider = StreamProvider<double>((ref) {
+  return ref.watch(databaseProvider).customersDao.watchTotalDebts();
 });
