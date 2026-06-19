@@ -13,7 +13,7 @@ class AppTheme {
         brightness:  Brightness.light,
       ),
       fontFamily:     'Cairo',
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         headlineLarge:  AppTextStyles.headlineLarge,
         headlineMedium: AppTextStyles.headlineMedium,
         headlineSmall:  AppTextStyles.headlineSmall,

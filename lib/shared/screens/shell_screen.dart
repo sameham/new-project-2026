@@ -55,19 +55,20 @@ class ShellScreen extends StatelessWidget {
             BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 24, offset: const Offset(0, -4)),
           ],
         ),
-        child: BottomAppBar(
-          color: Colors.transparent,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(context, 0, idx, Icons.dashboard_outlined, Icons.dashboard, 'الرئيسية'),
-              _buildNavItem(context, 1, idx, Icons.flight_outlined, Icons.flight, 'الحجوزات'),
-              const SizedBox(width: 60), // Space for FAB
-              _buildNavItem(context, 2, idx, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 'المالية'),
-              _buildNavItem(context, 3, idx, Icons.more_horiz_outlined, Icons.more_horiz, 'المزيد'),
-            ],
+        child: SafeArea(
+          child: Container(
+            height: 60,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(context, 0, idx, Icons.dashboard_outlined, Icons.dashboard, 'الرئيسية'),
+                _buildNavItem(context, 1, idx, Icons.flight_outlined, Icons.flight, 'الحجوزات'),
+                const SizedBox(width: 60), // Space for FAB
+                _buildNavItem(context, 2, idx, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 'المالية'),
+                _buildNavItem(context, 3, idx, Icons.more_horiz_outlined, Icons.more_horiz, 'المزيد'),
+              ],
+            ),
           ),
         ),
       ),
@@ -83,12 +84,13 @@ class ShellScreen extends StatelessWidget {
       onTap: () => _onItemTapped(index, context),
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400)),
           ],
         ),
