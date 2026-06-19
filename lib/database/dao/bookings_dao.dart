@@ -111,6 +111,51 @@ class BookingsDao extends DatabaseAccessor<AppDatabase>
     return q.watchSingle().map((row) => row.read(profitSum) ?? 0.0);
   }
 
+  Stream<List<MonthlyStat>> watchYearlyStats(int year) {
+    final start = DateTime(year, 1, 1);
+    final end = DateTime(year, 12, 31, 23, 59, 59);
+
+    return (select(bookings)..where((b) => b.createdAt.isBetweenValues(start, end)))
+      .watch()
+      .map((rows) {
+        final map = <int, MonthlyStat>{};
+        for (int i = 1; i <= 12; i++) {
+          map[i] = MonthlyStat(i, 0, 0);
+        }
+        for (final row in rows) {
+          final m = row.createdAt.month;
+          final rev = map[m]!.revenue + row.sellingPrice;
+          final prof = map[m]!.profit + (row.sellingPrice - row.totalCost);
+          map[m] = MonthlyStat(m, rev, prof);
+        }
+        return map.values.toList()..sort((a, b) => a.month.compareTo(b.month));
+      });
+  }
+
+  Stream<Map<String, int>> watchFlightDashboardStats() {
+    final now = DateTime.now();
+    return (select(bookings)..where((b) => b.status.equals('pending') | b.status.equals('confirmed')))
+      .watch()
+      .map((rows) {
+        int within24 = 0;
+        int within48 = 0;
+        int needsFollowup = 0;
+        for (final row in rows) {
+          if (row.status == 'pending') needsFollowup++;
+          if (row.departureDate != null) {
+            final diff = row.departureDate!.difference(now).inHours;
+            if (diff >= 0 && diff <= 24) within24++;
+            if (diff > 24 && diff <= 48) within48++;
+          }
+        }
+        return {
+          '24h': within24,
+          '48h': within48,
+          'followup': needsFollowup,
+        };
+      });
+  }
+
   Future<void> insertBooking(BookingsCompanion b) async {
     await into(bookings).insert(b);
     final row = await (select(bookings)..where((tbl) => tbl.id.equals(b.id.value))).getSingleOrNull();
@@ -152,4 +197,11 @@ class BookingsDao extends DatabaseAccessor<AppDatabase>
             syncStatus: const Value('synced'),
             syncedAt:   Value(DateTime.now()),
           ));
+}
+
+class MonthlyStat {
+  final int month;
+  final double revenue;
+  final double profit;
+  MonthlyStat(this.month, this.revenue, this.profit);
 }

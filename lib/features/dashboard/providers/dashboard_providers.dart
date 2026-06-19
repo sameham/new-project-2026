@@ -35,3 +35,11 @@ final totalDebtsProvider = StreamProvider<double>((ref) {
 final bookingsCountProvider = StreamProvider<int>((ref) {
   return ref.watch(databaseProvider).bookingsDao.watchCount();
 });
+
+final yearlyStatsProvider = StreamProvider.family<List<MonthlyStat>, int>((ref, year) {
+  return ref.watch(databaseProvider).bookingsDao.watchYearlyStats(year);
+});
+
+final flightDashboardProvider = StreamProvider<Map<String, int>>((ref) {
+  return ref.watch(databaseProvider).bookingsDao.watchFlightDashboardStats();
+});

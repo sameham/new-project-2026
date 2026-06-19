@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/dashboard/screens/dashboard_screen.dart';
+import '../../features/dashboard/screens/finance_dashboard_screen.dart';
 import '../../features/customers/screens/customers_list_screen.dart';
 import '../../features/customers/screens/customer_detail_screen.dart';
 import '../../features/customers/screens/customer_form_screen.dart';
@@ -23,6 +24,7 @@ import '../../features/settings/screens/login_screen.dart';
 import '../../features/settings/screens/initial_pull_screen.dart';
 import '../../features/settings/screens/sync_settings_screen.dart';
 import '../../features/settings/screens/backup_screen.dart';
+import '../../features/settings/screens/more_menu_screen.dart';
 import '../../shared/screens/shell_screen.dart';
 
 part 'app_router.g.dart';
@@ -44,26 +46,38 @@ GoRouter appRouter(AppRouterRef ref) {
             builder: (c, s) => const DashboardScreen(),
           ),
           GoRoute(
-            path: '/customers',
-            name: 'customers',
-            builder: (c, s) => const CustomersListScreen(),
-          ),
-          GoRoute(
             path: '/bookings',
             name: 'bookings',
             builder: (c, s) => const BookingsListScreen(),
           ),
           GoRoute(
-            path: '/payments',
-            name: 'payments',
-            builder: (c, s) => const PaymentsListScreen(),
+            path: '/finance',
+            name: 'finance',
+            builder: (c, s) => const FinanceDashboardScreen(),
           ),
           GoRoute(
-            path: '/reports',
-            name: 'reports',
-            builder: (c, s) => const ReportsMenuScreen(),
+            path: '/more',
+            name: 'more',
+            builder: (c, s) => const MoreMenuScreen(),
           ),
         ],
+      ),
+
+      // ── Additional Main Routes (Out of Bottom Nav) ────────
+      GoRoute(
+        path: '/customers',
+        name: 'customers',
+        builder: (c, s) => const CustomersListScreen(),
+      ),
+      GoRoute(
+        path: '/payments',
+        name: 'payments',
+        builder: (c, s) => const PaymentsListScreen(),
+      ),
+      GoRoute(
+        path: '/reports',
+        name: 'reports',
+        builder: (c, s) => const ReportsMenuScreen(),
       ),
 
       // ── Customer Routes ───────────────────────────────────
