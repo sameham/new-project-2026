@@ -158,37 +158,42 @@ class DashboardScreen extends ConsumerWidget {
               // ── Important Reports ──────────────────────────────────
               Text('تقارير هامة', style: AppTextStyles.titleMedium),
               const SizedBox(height: 10),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 3,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 1.2,
+              Row(
                 children: [
-                  _ActionItem(
-                    icon: Icons.money_off, 
-                    label: 'مبالغ مستحقة', 
-                    color: AppColors.error,    
-                    onTap: () => context.push('/reports/debtors')
+                  Expanded(
+                    child: _ReportStatCard(
+                      icon: Icons.money_off,
+                      label: 'مبالغ مستحقة',
+                      value: totalDebts.asData?.value != null ? fmt.format(totalDebts.asData!.value) : '-',
+                      color: AppColors.error,
+                      onTap: () => context.push('/reports/debtors')
+                    ),
                   ),
-                  _ActionItem(
-                    icon: Icons.flight_land, 
-                    label: 'طيران مسترجع', 
-                    color: AppColors.warning,   
-                    onTap: () {
-                      ref.read(bookingStatusFilterProvider.notifier).state = 'cancelled';
-                      context.go('/bookings');
-                    }
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _ReportStatCard(
+                      icon: Icons.flight_land,
+                      label: 'طيران مسترجع',
+                      value: '${statusCounts.asData?.value['cancelled'] ?? 0}',
+                      color: AppColors.warning,
+                      onTap: () {
+                        ref.read(bookingStatusFilterProvider.notifier).state = 'cancelled';
+                        context.go('/bookings');
+                      }
+                    ),
                   ),
-                  _ActionItem(
-                    icon: Icons.schedule, 
-                    label: 'طيران مؤجل', 
-                    color: AppColors.info,  
-                    onTap: () {
-                      ref.read(bookingStatusFilterProvider.notifier).state = 'pending';
-                      context.go('/bookings');
-                    }
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _ReportStatCard(
+                      icon: Icons.schedule,
+                      label: 'طيران مؤجل',
+                      value: '${statusCounts.asData?.value['pending'] ?? 0}',
+                      color: AppColors.info,
+                      onTap: () {
+                        ref.read(bookingStatusFilterProvider.notifier).state = 'pending';
+                        context.go('/bookings');
+                      }
+                    ),
                   ),
                 ],
               ),
@@ -331,6 +336,41 @@ class _ActionItem extends StatelessWidget {
           const SizedBox(height: 8),
           Text(label, style: AppTextStyles.labelSmall.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary), textAlign: TextAlign.center),
         ],
+      ),
+    );
+  }
+}
+
+class _ReportStatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ReportStatCard({required this.icon, required this.label, required this.value, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.2)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 12),
+            Text(value, style: AppTextStyles.titleMedium.copyWith(color: color, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(label, style: AppTextStyles.labelSmall.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+          ],
+        ),
       ),
     );
   }
