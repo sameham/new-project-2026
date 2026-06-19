@@ -1,0 +1,133 @@
+// lib/database/dao/bookings_dao.dart
+
+import 'package:drift/drift.dart';
+import '../app_database.dart';
+import '../tables/bookings_table.dart';
+
+part 'bookings_dao.g.dart';
+
+@DriftAccessor(tables: [Bookings])
+class BookingsDao extends DatabaseAccessor<AppDatabase>
+    with _$BookingsDaoMixin {
+
+  BookingsDao(super.db);
+
+  Stream<List<Booking>> watchAll() =>
+      (select(bookings)
+        ..orderBy([(b) => OrderingTerm.desc(b.createdAt)]))
+      .watch();
+
+  Future<Booking?> getById(String id) =>
+      (select(bookings)..where((b) => b.id.equals(id)))
+      .getSingleOrNull();
+
+  Stream<Booking?> watchById(String id) =>
+      (select(bookings)..where((b) => b.id.equals(id)))
+      .watchSingleOrNull();
+
+  Future<List<Booking>> getByCustomer(String customerId) =>
+      (select(bookings)
+        ..where((b) => b.customerId.equals(customerId)))
+      .get();
+
+  Stream<List<Booking>> watchByCustomer(String customerId) =>
+      (select(bookings)
+        ..where((b) => b.customerId.equals(customerId)))
+      .watch();
+
+  Future<List<Booking>> getUpcoming() async {
+    final now     = DateTime.now();
+    final cutoff  = now.add(const Duration(hours: 48));
+    return (select(bookings)
+      ..where((b) =>
+          b.departureDate.isBiggerOrEqualValue(now) &
+          b.departureDate.isSmallerOrEqualValue(cutoff) &
+          b.status.equals('confirmed')))
+    .get();
+  }
+
+  Stream<List<Booking>> watchUpcoming() {
+    final now     = DateTime.now();
+    final cutoff  = now.add(const Duration(hours: 48));
+    return (select(bookings)
+      ..where((b) =>
+          b.departureDate.isBiggerOrEqualValue(now) &
+          b.departureDate.isSmallerOrEqualValue(cutoff) &
+          b.status.equals('confirmed')))
+    .watch();
+  }
+
+  Future<Map<String, int>> getStatusCounts() async {
+    final rows = await select(bookings).get();
+    final map  = <String, int>{};
+    for (final b in rows) {
+      map[b.status] = (map[b.status] ?? 0) + 1;
+    }
+    return map;
+  }
+
+  Stream<Map<String, int>> watchStatusCounts() {
+    return select(bookings).watch().map((rows) {
+      final map  = <String, int>{};
+      for (final b in rows) {
+        map[b.status] = (map[b.status] ?? 0) + 1;
+      }
+      return map;
+    });
+  }
+
+  Future<double> getTotalRevenue({DateTime? from, DateTime? to}) async {
+    final sum   = bookings.sellingPrice.sum();
+    final query = selectOnly(bookings)..addColumns([sum]);
+    if (from != null) query.where(bookings.createdAt.isBiggerOrEqualValue(from));
+    if (to   != null) query.where(bookings.createdAt.isSmallerOrEqualValue(to));
+    return (await query.getSingle()).read(sum) ?? 0.0;
+  }
+
+  Future<double> getTotalProfit({DateTime? from, DateTime? to}) async {
+    final rows = await select(bookings).get();
+    return rows.fold<double>(0.0, (s, b) => s + (b.sellingPrice - b.totalCost));
+  }
+
+  Future<void> insertBooking(BookingsCompanion b) async {
+    await into(bookings).insert(b);
+    final row = await (select(bookings)..where((tbl) => tbl.id.equals(b.id.value))).getSingleOrNull();
+    if (row != null) {
+      await db.syncQueueDao.enqueue(targetTable: 'bookings', recordId: row.id, operation: 'INSERT', payload: row.toJson());
+    }
+  }
+
+  Future<bool> updateBooking(BookingsCompanion b) async {
+    final res = await update(bookings).replace(b);
+    if (res) {
+      final row = await (select(bookings)..where((tbl) => tbl.id.equals(b.id.value))).getSingleOrNull();
+      if (row != null) {
+        await db.syncQueueDao.enqueue(targetTable: 'bookings', recordId: row.id, operation: 'UPDATE', payload: row.toJson());
+      }
+    }
+    return res;
+  }
+
+  Future<void> addPaymentToBooking(String id, double amount) async {
+    final b = await getById(id);
+    if (b == null) return;
+    final newPaid = b.paidAmount + amount;
+    await (update(bookings)..where((tbl) => tbl.id.equals(id))).write(BookingsCompanion(paidAmount: Value(newPaid)));
+    final row = await (select(bookings)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+    if (row != null) {
+      await db.syncQueueDao.enqueue(targetTable: 'bookings', recordId: row.id, operation: 'UPDATE', payload: row.toJson());
+    }
+  }
+
+  Future<int> deleteBooking(String id) async {
+    await db.syncQueueDao.enqueue(targetTable: 'bookings', recordId: id, operation: 'DELETE', payload: {});
+    return (delete(bookings)..where((b) => b.id.equals(id))).go();
+  }
+
+  Future<void> markSynced(String id) async =>
+      (update(bookings)..where((b) => b.id.equals(id)))
+          .write(BookingsCompanion(
+            syncStatus: const Value('synced'),
+            syncedAt:   Value(DateTime.now()),
+          ));
+}
