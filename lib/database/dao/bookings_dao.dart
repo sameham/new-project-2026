@@ -35,6 +35,12 @@ class BookingsDao extends DatabaseAccessor<AppDatabase>
         ..where((b) => b.customerId.equals(customerId)))
       .watch();
 
+  Stream<int> watchCount() {
+    final count = bookings.id.count();
+    final q = selectOnly(bookings)..addColumns([count]);
+    return q.watchSingle().map((row) => row.read(count) ?? 0);
+  }
+
   Future<List<Booking>> getUpcoming() async {
     final now     = DateTime.now();
     final cutoff  = now.add(const Duration(hours: 48));
@@ -92,6 +98,16 @@ class BookingsDao extends DatabaseAccessor<AppDatabase>
   Stream<double> watchTotalProfits() {
     final profitSum = CustomExpression<double>('SUM(selling_price - total_cost)');
     final q = selectOnly(bookings)..addColumns([profitSum]);
+    return q.watchSingle().map((row) => row.read(profitSum) ?? 0.0);
+  }
+
+  Stream<double> watchMonthProfits() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, 1);
+    final profitSum = CustomExpression<double>('SUM(selling_price - total_cost)');
+    final q = selectOnly(bookings)
+      ..addColumns([profitSum])
+      ..where(bookings.createdAt.isBiggerOrEqualValue(start));
     return q.watchSingle().map((row) => row.read(profitSum) ?? 0.0);
   }
 

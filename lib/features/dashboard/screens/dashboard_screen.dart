@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../providers/dashboard_providers.dart';
+import '../../bookings/providers/bookings_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -15,27 +16,48 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final customerCount  = ref.watch(customerCountProvider);
     final profits        = ref.watch(profitsProvider);
-    final monthRevenue   = ref.watch(monthRevenueProvider);
+    final monthProfits   = ref.watch(monthProfitsProvider);
     final totalDebts     = ref.watch(totalDebtsProvider);
+    final bookingsCount  = ref.watch(bookingsCountProvider);
     final statusCounts   = ref.watch(bookingStatusCountsProvider);
     final upcoming       = ref.watch(upcomingBookingsProvider);
-    final fmt = NumberFormat('#,##0.00', 'ar');
+    final fmt = NumberFormat('#,##0', 'ar');
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: const Padding(
+          padding: EdgeInsets.all(8.0),
+          child: CircleAvatar(
+            backgroundColor: Colors.white24,
+            child: Icon(Icons.person, color: Colors.white),
+          ),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('وكالة سامح عبدالله', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-            Text('للسفر والسياحة', style: AppTextStyles.labelMedium.copyWith(color: Colors.white70)),
+            const Text('صباح الخير، سامح 👋', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            monthProfits.when(
+              data: (v) => Text('إجمالي الأرباح هذا الشهر: ${fmt.format(v)} ج.م', style: AppTextStyles.labelMedium.copyWith(color: Colors.white70)),
+              loading: () => Text('إجمالي الأرباح هذا الشهر: ...', style: AppTextStyles.labelMedium.copyWith(color: Colors.white70)),
+              error: (_, __) => Text('إجمالي الأرباح هذا الشهر: —', style: AppTextStyles.labelMedium.copyWith(color: Colors.white70)),
+            ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sync_outlined),
-            tooltip: 'المزامنة',
-            onPressed: () => context.push('/settings/sync'),
+            icon: const Icon(Icons.search),
+            tooltip: 'بحث',
+            onPressed: () {
+              // TODO: Implement Search
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_none),
+            tooltip: 'الإشعارات',
+            onPressed: () {
+              // TODO: Implement Notifications
+            },
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -48,8 +70,9 @@ class DashboardScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(customerCountProvider);
           ref.invalidate(profitsProvider);
-          ref.invalidate(monthRevenueProvider);
+          ref.invalidate(monthProfitsProvider);
           ref.invalidate(totalDebtsProvider);
+          ref.invalidate(bookingsCountProvider);
           ref.invalidate(bookingStatusCountsProvider);
           ref.invalidate(upcomingBookingsProvider);
         },
@@ -62,40 +85,57 @@ class DashboardScreen extends ConsumerWidget {
               // ── KPI Cards ──────────────────────────────────────
               Row(children: [
                 Expanded(child: _KpiCard(
-                  label: 'العملاء',
-                  value: customerCount.when(data: (v) => '$v', loading: () => '...', error: (_, __) => '—'),
-                  icon: Icons.people,
-                  color: AppColors.primary,
-                  onTap: () => context.go('/customers'),
+                  label: 'الأرباح',
+                  value: profits.when(data: (v) => '${fmt.format(v)} ج.م', loading: () => '...', error: (_, __) => '—'),
+                  onTap: () => context.push('/reports/sales'),
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _KpiCard(
-                  label: 'الأرباح',
-                  value: profits.when(data: (v) => '${fmt.format(v)} ج.م', loading: () => '...', error: (_, __) => '—'),
-                  icon: Icons.monetization_on,
-                  color: AppColors.success,
-                  onTap: () => context.push('/reports/sales'),
+                  label: 'العملاء',
+                  value: customerCount.when(data: (v) => '$v', loading: () => '...', error: (_, __) => '—'),
+                  onTap: () => context.go('/customers'),
                 )),
               ]),
               const SizedBox(height: 12),
               Row(children: [
                 Expanded(child: _KpiCard(
-                  label: 'إيرادات الشهر',
-                  value: monthRevenue.when(data: (v) => '${fmt.format(v)} ج.م', loading: () => '...', error: (_, __) => '—'),
-                  icon: Icons.trending_up,
-                  color: AppColors.info,
-                  onTap: () => context.push('/reports/sales'),
+                  label: 'المستحق',
+                  value: totalDebts.when(data: (v) => '${fmt.format(v)} ج.م', loading: () => '...', error: (_, __) => '—'),
+                  onTap: () => context.push('/reports/debtors'),
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: _KpiCard(
-                  label: 'المتبقي على العملاء',
-                  value: totalDebts.when(data: (v) => '${fmt.format(v)} ج.م', loading: () => '...', error: (_, __) => '—'),
-                  icon: Icons.account_balance_wallet,
-                  color: AppColors.warning,
-                  onTap: () => context.push('/reports/debtors'),
+                  label: 'الحجوزات',
+                  value: bookingsCount.when(data: (v) => '$v', loading: () => '...', error: (_, __) => '—'),
+                  onTap: () => context.go('/bookings'),
                 )),
               ]),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
+
+              // ── Quick Actions ──────────────────────────────────
+              Text('الإجراءات السريعة', style: AppTextStyles.titleMedium),
+              const SizedBox(height: 16),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ActionItem(icon: Icons.airplane_ticket, label: 'إصدار\nتذكرة', color: AppColors.info, onTap: () => context.push('/bookings/new')),
+                    const SizedBox(width: 20),
+                    _ActionItem(icon: Icons.flight_takeoff, label: 'حجز\nجديد', color: AppColors.primary, onTap: () => context.push('/bookings/new')),
+                    const SizedBox(width: 20),
+                    _ActionItem(icon: Icons.assignment_return, label: 'استرجاع', color: AppColors.warning, onTap: () {
+                      ref.read(bookingStatusFilterProvider.notifier).state = 'cancelled';
+                      context.go('/bookings');
+                    }),
+                    const SizedBox(width: 20),
+                    _ActionItem(icon: Icons.person_add, label: 'إضافة\nعميل', color: AppColors.success, onTap: () => context.push('/customers/new')),
+                    const SizedBox(width: 20),
+                    _ActionItem(icon: Icons.add_card, label: 'تحصيل\nدفعة', color: AppColors.secondary, onTap: () => context.push('/payments/new')),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
               // ── Booking Status ─────────────────────────────────
               Text('حالة الحجوزات', style: AppTextStyles.titleMedium),
@@ -115,25 +155,41 @@ class DashboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
 
-              // ── Quick Actions ──────────────────────────────────
-              Text('الإجراءات السريعة', style: AppTextStyles.titleMedium),
+              // ── Important Reports ──────────────────────────────────
+              Text('تقارير هامة', style: AppTextStyles.titleMedium),
               const SizedBox(height: 10),
               GridView.count(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 4,
+                crossAxisCount: 3,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: 0.9,
+                childAspectRatio: 1.2,
                 children: [
-                  _ActionItem(icon: Icons.person_add, label: 'عميل جديد', color: AppColors.primary,    onTap: () => context.push('/customers/new')),
-                  _ActionItem(icon: Icons.flight_takeoff, label: 'حجز جديد', color: AppColors.info,   onTap: () => context.push('/bookings/new')),
-                  _ActionItem(icon: Icons.add_card,    label: 'تسجيل دفعة', color: AppColors.success,  onTap: () => context.push('/payments/new')),
-                  _ActionItem(icon: Icons.receipt,     label: 'مصروف جديد', color: AppColors.warning,  onTap: () => context.push('/expenses')),
-                  _ActionItem(icon: Icons.people,      label: 'العملاء',   color: AppColors.primary,   onTap: () => context.go('/customers')),
-                  _ActionItem(icon: Icons.flight,      label: 'الحجوزات',  color: AppColors.info,      onTap: () => context.go('/bookings')),
-                  _ActionItem(icon: Icons.book_outlined, label: 'الدفتر', color: AppColors.secondary,  onTap: () => context.push('/ledger')),
-                  _ActionItem(icon: Icons.bar_chart,   label: 'التقارير',  color: AppColors.error,     onTap: () => context.go('/reports')),
+                  _ActionItem(
+                    icon: Icons.money_off, 
+                    label: 'مبالغ مستحقة', 
+                    color: AppColors.error,    
+                    onTap: () => context.push('/reports/debtors')
+                  ),
+                  _ActionItem(
+                    icon: Icons.flight_land, 
+                    label: 'طيران مسترجع', 
+                    color: AppColors.warning,   
+                    onTap: () {
+                      ref.read(bookingStatusFilterProvider.notifier).state = 'cancelled';
+                      context.go('/bookings');
+                    }
+                  ),
+                  _ActionItem(
+                    icon: Icons.schedule, 
+                    label: 'طيران مؤجل', 
+                    color: AppColors.info,  
+                    onTap: () {
+                      ref.read(bookingStatusFilterProvider.notifier).state = 'pending';
+                      context.go('/bookings');
+                    }
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -196,41 +252,27 @@ class DashboardScreen extends ConsumerWidget {
 class _KpiCard extends StatelessWidget {
   final String label;
   final String value;
-  final IconData icon;
-  final Color color;
   final VoidCallback onTap;
 
-  const _KpiCard({required this.label, required this.value, required this.icon, required this.color, required this.onTap});
+  const _KpiCard({required this.label, required this.value, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [BoxShadow(color: color.withOpacity(0.12), blurRadius: 8, offset: const Offset(0, 3))],
-          border: Border.all(color: color.withOpacity(0.2)),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-            ]),
-            const SizedBox(height: 12),
-            Text(value, style: AppTextStyles.titleLarge.copyWith(color: color, fontSize: 18)),
-            const SizedBox(height: 2),
-            Text(label, style: AppTextStyles.bodySmall),
+            Text(label, style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text(value, style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 20)),
           ],
         ),
       ),
@@ -278,25 +320,17 @@ class _ActionItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)],
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(height: 6),
-            Text(label, style: AppTextStyles.labelSmall.copyWith(color: AppColors.textPrimary), textAlign: TextAlign.center),
-          ],
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: color.withOpacity(0.12),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: AppTextStyles.labelSmall.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary), textAlign: TextAlign.center),
+        ],
       ),
     );
   }
