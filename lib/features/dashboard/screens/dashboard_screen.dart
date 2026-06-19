@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../database/dao/bookings_dao.dart';
 import '../providers/dashboard_providers.dart';
 import '../../bookings/providers/bookings_providers.dart';
 
@@ -150,12 +151,12 @@ class DashboardScreen extends ConsumerWidget {
                   final maxRev = stats.map((e) => e.revenue).fold<double>(0, (m, e) => e > m ? e : m);
                   final maxY = maxRev > 0 ? maxRev * 1.2 : 100.0;
                   return Container(
-                    height: 300,
+                    height: 280,
                     padding: const EdgeInsets.only(top: 30, bottom: 10, left: 16, right: 16),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: Colors.grey.withOpacity(0.08)),
                     ),
                     child: BarChart(
                       BarChartData(
@@ -373,11 +374,11 @@ class DashboardScreen extends ConsumerWidget {
               Text('أحدث النشاطات', style: AppTextStyles.titleMedium),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.grey.withOpacity(0.08)),
                 ),
                 child: Column(
                   children: [
@@ -411,11 +412,11 @@ class _KpiCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.withOpacity(0.08)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,11 +492,11 @@ class _ReportStatCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2)),
+          color: color.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.1)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

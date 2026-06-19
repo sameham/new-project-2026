@@ -50,21 +50,25 @@ class FinanceDashboardScreen extends ConsumerWidget {
 
   Widget _buildFinanceCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withOpacity(0.08)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 28),
+          CircleAvatar(
+            backgroundColor: color.withOpacity(0.1),
+            radius: 20,
+            child: Icon(icon, color: color, size: 20),
+          ),
           const Spacer(),
-          Text(value, style: AppTextStyles.titleLarge.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 18)),
+          Text(value, style: AppTextStyles.titleLarge?.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 18) ?? TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w800, fontSize: 18)),
           const SizedBox(height: 4),
-          Text(label, style: AppTextStyles.labelSmall.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+          Text(label, style: AppTextStyles.labelSmall?.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 13) ?? TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600, fontSize: 13)),
         ],
       ),
     );

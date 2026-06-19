@@ -2,6 +2,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../database/app_database.dart';
+import '../../../database/dao/bookings_dao.dart';
 import '../../../database/tables/bookings_table.dart';
 
 final customerCountProvider = StreamProvider<int>((ref) {

@@ -30,31 +30,45 @@ class ShellScreen extends StatelessWidget {
     final idx = _selectedIndex(context);
     
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: child,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.secondary,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        onPressed: () {
-          _showQuickActions(context);
-        },
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      floatingActionButton: Container(
+        margin: const EdgeInsets.only(top: 32),
+        height: 60,
+        width: 60,
+        child: FloatingActionButton(
+          backgroundColor: AppColors.secondary,
+          elevation: 0,
+          highlightElevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          onPressed: () {
+            _showQuickActions(context);
+          },
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
+        ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        color: AppColors.surface,
-        elevation: 8,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(context, 0, idx, Icons.dashboard_outlined, Icons.dashboard, 'الرئيسية'),
-            _buildNavItem(context, 1, idx, Icons.flight_outlined, Icons.flight, 'الحجوزات'),
-            const SizedBox(width: 48), // Space for FAB
-            _buildNavItem(context, 2, idx, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 'المالية'),
-            _buildNavItem(context, 3, idx, Icons.more_horiz_outlined, Icons.more_horiz, 'المزيد'),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 24, offset: const Offset(0, -4)),
           ],
+        ),
+        child: BottomAppBar(
+          color: Colors.transparent,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(context, 0, idx, Icons.dashboard_outlined, Icons.dashboard, 'الرئيسية'),
+              _buildNavItem(context, 1, idx, Icons.flight_outlined, Icons.flight, 'الحجوزات'),
+              const SizedBox(width: 60), // Space for FAB
+              _buildNavItem(context, 2, idx, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 'المالية'),
+              _buildNavItem(context, 3, idx, Icons.more_horiz_outlined, Icons.more_horiz, 'المزيد'),
+            ],
+          ),
         ),
       ),
     );
