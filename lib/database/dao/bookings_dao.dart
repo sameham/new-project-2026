@@ -197,6 +197,60 @@ class BookingsDao extends DatabaseAccessor<AppDatabase>
             syncStatus: const Value('synced'),
             syncedAt:   Value(DateTime.now()),
           ));
+
+  Stream<double> watchTotalRevenue() {
+    final sum = bookings.sellingPrice.sum();
+    final q = selectOnly(bookings)..addColumns([sum]);
+    return q.watchSingle().map((row) => row.read(sum) ?? 0.0);
+  }
+
+  Stream<List<AirlineStat>> watchAirlineStats() {
+    return watchAll().map((rows) {
+      final map = <String, AirlineStat>{};
+      for (final b in rows.where((r) => r.airlineName != null && r.airlineName!.isNotEmpty)) {
+        final name = b.airlineName!;
+        final s = map[name] ?? AirlineStat(name, 0, 0, 0);
+        map[name] = AirlineStat(
+          name, s.count + 1,
+          s.revenue + b.sellingPrice,
+          s.profit + (b.sellingPrice - b.totalCost),
+        );
+      }
+      final list = map.values.toList()
+        ..sort((a, b) => b.revenue.compareTo(a.revenue));
+      return list;
+    });
+  }
+
+  Future<List<CustomerRevenueStat>> getTopCustomers(int limit) async {
+    final rows = await select(bookings).get();
+    final map = <String, CustomerRevenueStat>{};
+    for (final b in rows) {
+      final s = map[b.customerId] ?? CustomerRevenueStat(b.customerId, 0, 0, 0);
+      map[b.customerId] = CustomerRevenueStat(
+        b.customerId,
+        s.bookingCount + 1,
+        s.totalRevenue + b.sellingPrice,
+        s.totalProfit + (b.sellingPrice - b.totalCost),
+      );
+    }
+    final list = map.values.toList()
+      ..sort((a, b) => b.totalRevenue.compareTo(a.totalRevenue));
+    return list.take(limit).toList();
+  }
+
+  Future<List<DestinationStat>> getTopDestinations(int limit) async {
+    final rows = await select(bookings).get();
+    final map = <String, DestinationStat>{};
+    for (final b in rows.where((r) => r.destination != null && r.destination!.isNotEmpty)) {
+      final d = b.destination!;
+      final s = map[d] ?? DestinationStat(d, 0);
+      map[d] = DestinationStat(d, s.count + 1);
+    }
+    final list = map.values.toList()
+      ..sort((a, b) => b.count.compareTo(a.count));
+    return list.take(limit).toList();
+  }
 }
 
 class MonthlyStat {
@@ -204,4 +258,26 @@ class MonthlyStat {
   final double revenue;
   final double profit;
   MonthlyStat(this.month, this.revenue, this.profit);
+}
+
+class AirlineStat {
+  final String airline;
+  final int count;
+  final double revenue;
+  final double profit;
+  AirlineStat(this.airline, this.count, this.revenue, this.profit);
+}
+
+class CustomerRevenueStat {
+  final String customerId;
+  final int bookingCount;
+  final double totalRevenue;
+  final double totalProfit;
+  CustomerRevenueStat(this.customerId, this.bookingCount, this.totalRevenue, this.totalProfit);
+}
+
+class DestinationStat {
+  final String destination;
+  final int count;
+  DestinationStat(this.destination, this.count);
 }

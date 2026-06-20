@@ -14,3 +14,7 @@ final expenseCategoriesProvider =
 });
 
 final selectedExpenseCategoryProvider = StateProvider<String?>((ref) => null);
+
+final monthExpensesProvider = StreamProvider<double>((ref) {
+  return ref.watch(databaseProvider).expensesDao.watchMonthTotal();
+});

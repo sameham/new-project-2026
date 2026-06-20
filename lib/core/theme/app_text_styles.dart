@@ -48,6 +48,9 @@ class AppTextStyles {
   static final labelSmall = GoogleFonts.cairo(
     fontSize: 10, fontWeight: FontWeight.w400, color: AppColors.textHint,
   );
+  static final labelXSmall = GoogleFonts.cairo(
+    fontSize: 9, fontWeight: FontWeight.w500, color: AppColors.textHint,
+  );
 
   // ── Financial ─────────────────────────────────────────────
   static final amountLarge = GoogleFonts.cairo(
@@ -55,5 +58,35 @@ class AppTextStyles {
   );
   static final amountMedium = GoogleFonts.cairo(
     fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary,
+  );
+  static final amountSmall = GoogleFonts.cairo(
+    fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary,
+  );
+
+  // ── Section / Card ────────────────────────────────────────
+  static final sectionTitle = GoogleFonts.cairo(
+    fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary,
+  );
+  static final cardTitle = GoogleFonts.cairo(
+    fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary,
+  );
+  static final cardSubtitle = GoogleFonts.cairo(
+    fontSize: 12, fontWeight: FontWeight.w400, color: AppColors.textSecondary,
+  );
+
+  // ── KPI ───────────────────────────────────────────────────
+  static final kpiValue = GoogleFonts.cairo(
+    fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary,
+  );
+  static final kpiLabel = GoogleFonts.cairo(
+    fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textSecondary,
+  );
+  static final kpiTrend = GoogleFonts.cairo(
+    fontSize: 11, fontWeight: FontWeight.w600,
+  );
+
+  // ── Tag ───────────────────────────────────────────────────
+  static final tagLabel = GoogleFonts.cairo(
+    fontSize: 10, fontWeight: FontWeight.w600,
   );
 }

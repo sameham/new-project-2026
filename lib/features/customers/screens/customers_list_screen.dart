@@ -8,6 +8,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../database/tables/customers_table.dart';
 import '../../../database/app_database.dart';
 import '../providers/customers_providers.dart';
+import '../../../shared/widgets/customer_card.dart';
 
 class CustomersListScreen extends ConsumerWidget {
   const CustomersListScreen({super.key});
@@ -70,7 +71,10 @@ class CustomersListScreen extends ConsumerWidget {
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: list.length,
-            itemBuilder: (context, i) => _CustomerTile(customer: list[i]),
+            itemBuilder: (context, i) => CustomerCard(
+              customer: list[i],
+              onTap: () => context.push('/customers/${list[i].id}'),
+            ),
           );
         },
       ),

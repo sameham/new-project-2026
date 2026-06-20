@@ -40,6 +40,20 @@ class PaymentsDao extends DatabaseAccessor<AppDatabase>
         ..where((p) => p.bookingId.equals(bookingId)))
       .get();
 
+  Stream<List<Payment>> watchByBooking(String bookingId) =>
+      (select(payments)
+        ..where((p) => p.bookingId.equals(bookingId))
+        ..orderBy([(p) => OrderingTerm.desc(p.paymentDate)]))
+      .watch();
+
+  Stream<double> watchTotalIn() {
+    final sum = payments.amount.sum();
+    final q = selectOnly(payments)
+      ..addColumns([sum])
+      ..where(payments.direction.equals('in'));
+    return q.watchSingle().map((row) => row.read(sum) ?? 0.0);
+  }
+
   Future<List<Payment>> getByDateRange({
     required DateTime from, required DateTime to,
   }) =>

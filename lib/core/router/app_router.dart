@@ -25,6 +25,9 @@ import '../../features/settings/screens/initial_pull_screen.dart';
 import '../../features/settings/screens/sync_settings_screen.dart';
 import '../../features/settings/screens/backup_screen.dart';
 import '../../features/settings/screens/more_menu_screen.dart';
+import '../../features/ai/screens/ai_assistant_screen.dart';
+import '../../features/reports/screens/airline_performance_screen.dart';
+import '../../features/reports/screens/top_customers_report_screen.dart';
 import '../../shared/screens/shell_screen.dart';
 
 part 'app_router.g.dart';
@@ -109,6 +112,12 @@ GoRouter appRouter(AppRouterRef ref) {
           bookingId: s.pathParameters['id']!,
         ),
       ),
+      GoRoute(
+        path: '/bookings/:id/edit',
+        builder: (c, s) => BookingFormScreen(
+          bookingId: s.pathParameters['id'],
+        ),
+      ),
 
       // ── Payment Routes ────────────────────────────────────
       GoRoute(
@@ -130,6 +139,18 @@ GoRouter appRouter(AppRouterRef ref) {
       GoRoute(
         path: '/reports/debtors',
         builder: (c, s) => const DebtorsReportScreen(),
+      ),
+      GoRoute(
+        path: '/reports/airlines',
+        builder: (c, s) => const AirlinePerformanceScreen(),
+      ),
+      GoRoute(
+        path: '/reports/top-customers',
+        builder: (c, s) => const TopCustomersReportScreen(),
+      ),
+      GoRoute(
+        path: '/ai',
+        builder: (c, s) => const AiAssistantScreen(),
       ),
 
       // ── Ledger & Expenses ─────────────────────────────────

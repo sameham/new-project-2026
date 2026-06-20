@@ -108,6 +108,13 @@ class $CustomersTable extends Customers
       type: DriftSqlType.double,
       requiredDuringInsert: false,
       defaultValue: const Constant(0.0));
+  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
+  @override
+  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
+      'tags', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('[]'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -157,6 +164,7 @@ class $CustomersTable extends Customers
         address,
         notes,
         balance,
+        tags,
         createdAt,
         updatedAt,
         syncStatus,
@@ -263,6 +271,10 @@ class $CustomersTable extends Customers
       context.handle(_balanceMeta,
           balance.isAcceptableOrUnknown(data['balance']!, _balanceMeta));
     }
+    if (data.containsKey('tags')) {
+      context.handle(
+          _tagsMeta, tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -324,6 +336,8 @@ class $CustomersTable extends Customers
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
       balance: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}balance'])!,
+      tags: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tags'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -359,6 +373,7 @@ class Customer extends DataClass implements Insertable<Customer> {
   final String? address;
   final String? notes;
   final double balance;
+  final String tags;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String syncStatus;
@@ -381,6 +396,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       this.address,
       this.notes,
       required this.balance,
+      this.tags = '[]',
       required this.createdAt,
       required this.updatedAt,
       required this.syncStatus,
@@ -427,6 +443,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       map['notes'] = Variable<String>(notes);
     }
     map['balance'] = Variable<double>(balance);
+    map['tags'] = Variable<String>(tags);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['sync_status'] = Variable<String>(syncStatus);
@@ -474,6 +491,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       balance: Value(balance),
+      tags: Value(tags),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       syncStatus: Value(syncStatus),
@@ -504,6 +522,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       address: serializer.fromJson<String?>(json['address']),
       notes: serializer.fromJson<String?>(json['notes']),
       balance: serializer.fromJson<double>(json['balance']),
+      tags: serializer.fromJson<String>(json['tags'] ?? '[]'),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
@@ -531,6 +550,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       'address': serializer.toJson<String?>(address),
       'notes': serializer.toJson<String?>(notes),
       'balance': serializer.toJson<double>(balance),
+      'tags': serializer.toJson<String>(tags),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'syncStatus': serializer.toJson<String>(syncStatus),
@@ -556,6 +576,7 @@ class Customer extends DataClass implements Insertable<Customer> {
           Value<String?> address = const Value.absent(),
           Value<String?> notes = const Value.absent(),
           double? balance,
+          String? tags,
           DateTime? createdAt,
           DateTime? updatedAt,
           String? syncStatus,
@@ -580,6 +601,7 @@ class Customer extends DataClass implements Insertable<Customer> {
         address: address.present ? address.value : this.address,
         notes: notes.present ? notes.value : this.notes,
         balance: balance ?? this.balance,
+        tags: tags ?? this.tags,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         syncStatus: syncStatus ?? this.syncStatus,
@@ -614,6 +636,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       address: data.address.present ? data.address.value : this.address,
       notes: data.notes.present ? data.notes.value : this.notes,
       balance: data.balance.present ? data.balance.value : this.balance,
+      tags: data.tags.present ? data.tags.value : this.tags,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       syncStatus:
@@ -642,6 +665,7 @@ class Customer extends DataClass implements Insertable<Customer> {
           ..write('address: $address, ')
           ..write('notes: $notes, ')
           ..write('balance: $balance, ')
+          ..write('tags: $tags, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncStatus: $syncStatus, ')
@@ -669,6 +693,7 @@ class Customer extends DataClass implements Insertable<Customer> {
         address,
         notes,
         balance,
+        tags,
         createdAt,
         updatedAt,
         syncStatus,
@@ -695,6 +720,7 @@ class Customer extends DataClass implements Insertable<Customer> {
           other.address == this.address &&
           other.notes == this.notes &&
           other.balance == this.balance &&
+          other.tags == this.tags &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.syncStatus == this.syncStatus &&
@@ -719,6 +745,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   final Value<String?> address;
   final Value<String?> notes;
   final Value<double> balance;
+  final Value<String> tags;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<String> syncStatus;
@@ -742,6 +769,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     this.address = const Value.absent(),
     this.notes = const Value.absent(),
     this.balance = const Value.absent(),
+    this.tags = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
@@ -766,6 +794,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     this.address = const Value.absent(),
     this.notes = const Value.absent(),
     this.balance = const Value.absent(),
+    this.tags = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
@@ -794,6 +823,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     Expression<String>? address,
     Expression<String>? notes,
     Expression<double>? balance,
+    Expression<String>? tags,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? syncStatus,
@@ -818,6 +848,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       if (address != null) 'address': address,
       if (notes != null) 'notes': notes,
       if (balance != null) 'balance': balance,
+      if (tags != null) 'tags': tags,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
@@ -844,6 +875,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       Value<String?>? address,
       Value<String?>? notes,
       Value<double>? balance,
+      Value<String>? tags,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<String>? syncStatus,
@@ -867,6 +899,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
       address: address ?? this.address,
       notes: notes ?? this.notes,
       balance: balance ?? this.balance,
+      tags: tags ?? this.tags,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncStatus: syncStatus ?? this.syncStatus,
@@ -929,6 +962,9 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     if (balance.present) {
       map['balance'] = Variable<double>(balance.value);
     }
+    if (tags.present) {
+      map['tags'] = Variable<String>(tags.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -967,6 +1003,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
           ..write('address: $address, ')
           ..write('notes: $notes, ')
           ..write('balance: $balance, ')
+          ..write('tags: $tags, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncStatus: $syncStatus, ')

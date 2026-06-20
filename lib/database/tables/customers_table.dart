@@ -20,6 +20,7 @@ class Customers extends Table {
   TextColumn    get address        => text().nullable()();
   TextColumn    get notes          => text().nullable()();
   RealColumn    get balance        => real().withDefault(const Constant(0.0))();
+  TextColumn    get tags           => text().withDefault(const Constant('[]'))();
   DateTimeColumn get createdAt     => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt     => dateTime().withDefault(currentDateAndTime)();
   TextColumn    get syncStatus     => text().withDefault(const Constant('pending'))();

@@ -26,6 +26,6 @@ final paymentByIdProvider = FutureProvider.family<Payment?, String>((ref, id) {
 });
 
 final paymentsByBookingProvider =
-    FutureProvider.family<List<Payment>, String>((ref, bookingId) {
-  return ref.watch(databaseProvider).paymentsDao.getByBooking(bookingId);
+    StreamProvider.family<List<Payment>, String>((ref, bookingId) {
+  return ref.watch(databaseProvider).paymentsDao.watchByBooking(bookingId);
 });

@@ -38,7 +38,7 @@ class ShellScreen extends StatelessWidget {
         height: 60,
         width: 60,
         child: FloatingActionButton(
-          backgroundColor: AppColors.secondary,
+          backgroundColor: AppColors.primary,
           elevation: 0,
           highlightElevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -77,7 +77,7 @@ class ShellScreen extends StatelessWidget {
 
   Widget _buildNavItem(BuildContext context, int index, int currentIndex, IconData iconOutlined, IconData iconSolid, String label) {
     final isSelected = index == currentIndex;
-    final color = isSelected ? AppColors.secondary : AppColors.textHint;
+    final color = isSelected ? AppColors.primary : AppColors.textHint;
     final icon = isSelected ? iconSolid : iconOutlined;
 
     return InkWell(
@@ -123,6 +123,11 @@ class ShellScreen extends StatelessWidget {
               leading: const CircleAvatar(backgroundColor: AppColors.warningLight, child: Icon(Icons.add_card, color: AppColors.warning)),
               title: const Text('تحصيل دفعة'),
               onTap: () { Navigator.pop(c); context.push('/payments/new'); },
+            ),
+            ListTile(
+              leading: const CircleAvatar(backgroundColor: AppColors.primaryLight, child: Icon(Icons.psychology, color: AppColors.primary)),
+              title: const Text('مساعد الذكاء الاصطناعي'),
+              onTap: () { Navigator.pop(c); context.push('/ai'); },
             ),
             const SizedBox(height: 16),
           ],

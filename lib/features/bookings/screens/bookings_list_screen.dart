@@ -9,6 +9,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../database/tables/bookings_table.dart';
 import '../../../database/app_database.dart';
 import '../providers/bookings_providers.dart';
+import '../../../shared/widgets/booking_card.dart';
 
 class BookingsListScreen extends ConsumerWidget {
   const BookingsListScreen({super.key});
@@ -70,7 +71,10 @@ class BookingsListScreen extends ConsumerWidget {
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: list.length,
-            itemBuilder: (context, i) => _BookingTile(booking: list[i]),
+            itemBuilder: (context, i) => BookingCard(
+              booking: list[i],
+              onTap: () => context.push('/bookings/${list[i].id}'),
+            ),
           );
         },
       ),
