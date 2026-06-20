@@ -46,7 +46,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
   Future<String?> _getApiKey() async {
     final db = ref.read(databaseProvider);
-    return db.settingsDao.get('claude_api_key');
+    return db.settingsDao.getValue('claude_api_key');
   }
 
   Future<String> _buildContext(String prompt) async {

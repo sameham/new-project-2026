@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../database/tables/bookings_table.dart';
+import '../../database/app_database.dart';
 import '../../features/customers/providers/customers_providers.dart';
 import 'status_badge.dart';
 
