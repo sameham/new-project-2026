@@ -91,7 +91,7 @@ fun <T> AppDropdown(
             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
             modifier = Modifier.menuAnchor().fillMaxWidth(),
         )
-        androidx.compose.material3.ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(optionLabel(option)) },

@@ -1,83 +1,98 @@
-# new-progect-2026
-# 🛫 elmahdi_travel_suite
-### وكالة سامح عبدالله للسفر والسياحة
+# وكالة سامح عبدالله للسفر والسياحة — تطبيق إدارة الحسابات والحجوزات
 
-## 🚀 Quick Start
+تطبيق Android أصلي بلغة **Kotlin** وواجهات **Jetpack Compose**، عربي بالكامل مع دعم RTL،
+يعمل **بدون إنترنت** (Offline-First) ويزامن البيانات تلقائيًا مع السحابة عند عودة الاتصال.
 
-### Prerequisites
-- Flutter SDK >= 3.3.0
-- Android Studio + Android SDK
-- Cairo font files in `assets/fonts/`
+## الشاشات
 
-### Setup
+| الشاشة | الوظيفة |
+|---|---|
+| لوحة التحكم | المتبقي على العملاء، الأرباح، الاستردادات، المحفظة، رحلات 24 ساعة، المؤجلة، تنبيهات |
+| حجوزات الطيران | ذهاب فقط / ذهاب وعودة، الربح والمتبقي يُحسبان تلقائيًا، حالات (قادم/مؤجل/مكتمل/ملغي) |
+| تساهيل | عمليات القنصليات: العدد، القنصلية، البيع/الشراء/الربح/المدفوع/المتبقي |
+| المدفوعات | متعددة العملات مع سعر الصرف بالمصري، تصنيفات (طيران/تساهيل/مصاريف/محفظة/استرداد) |
+| المديونية | ديون العملاء والشركات، حالة تلقائية، **صورة التحويل** تُرفع إلى السحابة |
+| العملاء | إدارة كاملة + سجل العميل (حجوزاته وديونه والمتبقي عليه)، حذف آمن |
+| التقارير | يومي، شهري، أرصدة العملاء، القادمة، الديون المفتوحة، المدفوعات، حسب العميل/التاريخ |
+| لوحة المدير | كلمة المرور، المستخدمون، الصلاحيات، نسخ احتياطي/استرجاع/حذف القاعدة، سجل العمليات |
 
+## التقنيات
+
+- **Room** — قاعدة البيانات المحلية (مصدر الحقيقة)
+- **Firebase Authentication** — تسجيل الدخول
+- **Cloud Firestore** — التخزين السحابي والمزامنة
+- **Firebase Storage** — صور التحويلات والنسخ الاحتياطية
+- **Hilt** — حقن الاعتماديات | **WorkManager** — المزامنة في الخلفية
+- **Navigation Compose** — التنقل | **Coil** — عرض الصور
+
+## تشغيل المشروع
+
+### 1) المتطلبات
+- Android Studio (Ladybug أو أحدث) + JDK 17
+- هاتف أو محاكي بنظام Android 8.0 (API 26) فما فوق
+
+### 2) إعداد Firebase (مرة واحدة)
+1. أنشئ مشروعًا على [Firebase Console](https://console.firebase.google.com).
+2. أضف تطبيق Android بحزمة `com.elmahdi.travelsuite`.
+3. نزّل `google-services.json` وضعه في مجلد `app/` **بدل الملف المؤقت الموجود**.
+4. فعّل **Authentication ← Email/Password**.
+5. فعّل **Cloud Firestore** و**Storage**، ثم انسخ القواعد من `firebase/firestore.rules`
+   و`firebase/storage.rules` إلى تبويب Rules لكل خدمة.
+6. أنشئ حساب المدير الأول من Authentication ← Add user (بريد + كلمة مرور).
+   عند أول تسجيل دخول من التطبيق يصبح هذا الحساب **مديرًا كامل الصلاحيات** تلقائيًا
+   وتُنشأ مساحة عمله، وكل مستخدم يضيفه لاحقًا ينضم لنفس المساحة.
+
+### 3) البناء والتشغيل
 ```bash
-# 1. Get dependencies
-flutter pub get
+./gradlew assembleDebug        # أو زر Run من Android Studio
+```
+APK الناتج: `app/build/outputs/apk/debug/app-debug.apk`
 
-# 2. Generate Drift + Riverpod code
-flutter pub run build_runner build --delete-conflicting-outputs
+### GitHub Actions
+- كل push على `main` يبني APK تلقائيًا (Artifacts).
+- لبناء APK بإعدادات Firebase الحقيقية: أضف Secret باسم `GOOGLE_SERVICES_JSON`
+  (محتوى الملف بترميز Base64) وVariable باسم `HAS_GOOGLE_SERVICES` بقيمة `true`.
+- إنشاء tag بصيغة `v1.0.0` ينشر Release تلقائيًا.
 
-# 3. Run
-flutter run
+## كيف تعمل المزامنة؟ (يمنع فقدان البيانات)
+
+1. كل عملية حفظ تُكتب فورًا في Room مع علامة `isSynced = false` — **لا انتظار للشبكة**.
+2. `SyncWorker` (WorkManager) يرفع السجلات المعلقة إلى Firestore ويسحب الأحدث منه:
+   - فوريًا بعد كل حفظ، ودوريًا كل 15 دقيقة، وتلقائيًا لحظة عودة الإنترنت.
+   - بشرط وجود اتصال؛ وإلا تُجدول المحاولة تلقائيًا حتى يعود.
+3. حسم التعارض: **الأحدث يفوز** بمقارنة `updatedAt`.
+4. الحذف منطقي (`isDeleted`) حتى تصل عملية الحذف لكل الأجهزة ثم لا تعود البيانات.
+5. صور التحويلات تُحفظ محليًا وتُرفع إلى Storage عند توفر الاتصال.
+
+## الصلاحيات
+
+ثلاثة أدوار جاهزة (مدير / مستخدم عادي / عرض فقط) مع 8 صلاحيات مفصلة قابلة للتخصيص
+لكل مستخدم من لوحة المدير: عرض، إضافة، تعديل، حذف، عرض الأرباح، إدارة المستخدمين،
+نسخ احتياطي، حذف قاعدة البيانات. الواجهات تخفي الأزرار غير المصرح بها تلقائيًا.
+
+## هيكل المشروع
+
+```
+app/src/main/java/com/elmahdi/travelsuite/
+├── domain/model/        # الأنواع والحالات والصلاحيات (Enums)
+├── data/
+│   ├── local/           # Room: entity/ + dao/ + AppDatabase
+│   ├── remote/          # مسارات Firestore
+│   ├── auth/            # تسجيل الدخول + الجلسة
+│   ├── sync/            # SyncEngine + SyncWorker + NetworkMonitor
+│   ├── backup/          # النسخ الاحتياطي والاسترجاع
+│   └── repository/      # منطق الأعمال لكل شاشة
+├── di/                  # وحدات Hilt
+└── ui/
+    ├── theme/ ├── common/ ├── navigation/
+    └── screens/         # dashboard, bookings, tasaheel, payments,
+                         # debts, customers, reports, admin, login, more
 ```
 
-### Windows
-```cmd
-build.bat
-```
+## التحديثات المستقبلية
 
-### Linux / macOS
-```bash
-chmod +x build.sh && ./build.sh
-```
+راجع **[docs/UPGRADING.md](docs/UPGRADING.md)**: ترقية إصدار قاعدة البيانات وكتابة
+Migrations، إضافة شاشة جديدة خطوة بخطوة، وإضافة تقارير PDF لاحقًا.
 
-## ⚙️ Configuration
-
-Edit `lib/core/constants/app_constants.dart`:
-
-```dart
-static const supabaseUrl     = 'https://YOUR_PROJECT.supabase.co';
-static const supabaseAnonKey = 'YOUR_ANON_KEY';
-```
-
-## 📂 Structure
-```
-lib/
-├── core/           # Theme, Router, Constants
-├── database/       # Drift DB, Tables, DAOs
-├── features/       # Screens by feature
-│   ├── dashboard/
-│   ├── customers/
-│   ├── bookings/
-│   ├── payments/
-│   ├── reports/
-│   ├── ledger/
-│   ├── expenses/
-│   └── settings/
-├── shared/         # Reusable Widgets
-└── main.dart
-```
-
-## 🏗️ Tech Stack
-| Layer | Technology |
-|-------|-----------|
-| Framework | Flutter 3.x |
-| Database | Drift (SQLite) |
-| Cloud | Supabase |
-| State | Riverpod |
-| Navigation | GoRouter |
-| PDF | pdf package |
-| Charts | fl_chart |
-
-## 📋 Phases
-- ✅ Phase 1 — Foundation
-- ✅ Phase 2 — Customers
-- ✅ Phase 3 — Bookings
-- ✅ Phase 4 — Payments
-- ✅ Phase 5 — Dashboard + Reports
-- ✅ Phase 6 — Supabase Sync
-- ✅ Phase 7 — PDF Documents
-
----
-Built with ❤️ for Sameh Abdullah Travel & Tourism Agency, Cairo 🇪🇬
+> ملاحظة: النسخة السابقة من هذا المشروع كانت بـ Flutter وما زالت محفوظة في سجل git
+> وعلى فرع main حتى دمج هذا الفرع.
