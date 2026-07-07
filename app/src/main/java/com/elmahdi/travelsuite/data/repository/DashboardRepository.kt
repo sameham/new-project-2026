@@ -27,36 +27,45 @@ class DashboardRepository @Inject constructor(
     private val paymentDao: PaymentDao,
     private val debtDao: DebtDao,
 ) {
+    private data class Financials(
+        val remaining: Double,
+        val profit: Double,
+        val refunds: Double,
+        val wallet: Double,
+    )
+
     fun observeSummary(): Flow<DashboardSummary> {
         val now = System.currentTimeMillis()
-        val financials = combine(
-            bookingDao.observeTotalRemaining(),
-            tasaheelDao.observeTotalRemaining(),
-            debtDao.observeTotalOpenRemaining(),
-            bookingDao.observeTotalProfit(),
-            tasaheelDao.observeTotalProfit(),
-        ) { bRem, tRem, dRem, bProfit, tProfit ->
-            DashboardSummary(
-                totalRemainingOnCustomers = bRem + tRem + dRem,
-                totalProfit = bProfit + tProfit,
-            )
-        }
-        return combine(
-            financials,
-            paymentDao.observeTotalProfit(),
+
+        val financials: Flow<Financials> = combine(
+            combine(
+                bookingDao.observeTotalRemaining(),
+                tasaheelDao.observeTotalRemaining(),
+                debtDao.observeTotalOpenRemaining(),
+            ) { booking, tasaheel, debt -> booking + tasaheel + debt },
+            combine(
+                bookingDao.observeTotalProfit(),
+                tasaheelDao.observeTotalProfit(),
+                paymentDao.observeTotalProfit(),
+            ) { booking, tasaheel, payment -> booking + tasaheel + payment },
             paymentDao.observeTotalRefunds(),
             paymentDao.observeWalletBalance(),
+        ) { remaining, profit, refunds, wallet ->
+            Financials(remaining, profit, refunds, wallet)
+        }
+
+        return combine(
+            financials,
             bookingDao.observeUpcomingWithin(now, now + 24 * 60 * 60 * 1000L),
             bookingDao.observePostponed(),
-        ) { values ->
-            @Suppress("UNCHECKED_CAST")
-            val base = values[0] as DashboardSummary
-            base.copy(
-                totalProfit = base.totalProfit + values[1] as Double,
-                totalRefunds = values[2] as Double,
-                walletBalance = values[3] as Double,
-                upcoming24h = values[4] as List<BookingEntity>,
-                postponed = values[5] as List<BookingEntity>,
+        ) { money, upcoming, postponed ->
+            DashboardSummary(
+                totalRemainingOnCustomers = money.remaining,
+                totalProfit = money.profit,
+                totalRefunds = money.refunds,
+                walletBalance = money.wallet,
+                upcoming24h = upcoming,
+                postponed = postponed,
             )
         }
     }

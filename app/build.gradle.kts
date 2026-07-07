@@ -80,4 +80,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.coil.compose)
     implementation(libs.gson)
+
+    testImplementation("junit:junit:4.13.2")
 }

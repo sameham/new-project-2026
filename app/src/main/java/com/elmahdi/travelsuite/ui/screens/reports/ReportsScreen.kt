@@ -10,9 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,13 +29,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.elmahdi.travelsuite.data.auth.SessionManager
-import com.elmahdi.travelsuite.data.repository.CustomerBalance
-import com.elmahdi.travelsuite.data.repository.ProfitReport
-import com.elmahdi.travelsuite.data.repository.ReportsRepository
 import com.elmahdi.travelsuite.data.local.entity.BookingEntity
+import com.elmahdi.travelsuite.data.local.entity.CustomerEntity
 import com.elmahdi.travelsuite.data.local.entity.DebtEntity
 import com.elmahdi.travelsuite.data.local.entity.PaymentEntity
+import com.elmahdi.travelsuite.data.local.entity.TasaheelEntity
+import com.elmahdi.travelsuite.data.repository.CustomerBalance
+import com.elmahdi.travelsuite.data.repository.CustomerRepository
+import com.elmahdi.travelsuite.data.repository.ProfitReport
+import com.elmahdi.travelsuite.data.repository.ReportsRepository
 import com.elmahdi.travelsuite.domain.model.Permission
+import com.elmahdi.travelsuite.ui.common.AppDropdown
 import com.elmahdi.travelsuite.ui.common.DateField
 import com.elmahdi.travelsuite.ui.common.EmptyState
 import com.elmahdi.travelsuite.ui.common.InfoRow
@@ -58,6 +66,7 @@ enum class ReportKind(val arabic: String) {
     UPCOMING_BOOKINGS("الحجوزات القادمة"),
     OPEN_DEBTS("المديونيات المفتوحة"),
     PAYMENTS("المدفوعات"),
+    BY_CUSTOMER("حسب العميل"),
     BY_DATE("حسب التاريخ"),
 }
 
@@ -66,9 +75,11 @@ data class ReportsUiState(
     val date: LocalDate = LocalDate.now(),
     val from: LocalDate = LocalDate.now().withDayOfMonth(1),
     val to: LocalDate = LocalDate.now(),
+    val customerId: String = "",
     val profit: ProfitReport? = null,
     val balances: List<CustomerBalance> = emptyList(),
     val bookings: List<BookingEntity> = emptyList(),
+    val tasaheel: List<TasaheelEntity> = emptyList(),
     val debts: List<DebtEntity> = emptyList(),
     val payments: List<PaymentEntity> = emptyList(),
 )
@@ -76,17 +87,22 @@ data class ReportsUiState(
 @HiltViewModel
 class ReportsViewModel @Inject constructor(
     private val repository: ReportsRepository,
+    private val pdfExporter: ReportPdfExporter,
+    customerRepository: CustomerRepository,
     session: SessionManager,
 ) : ViewModel() {
     private val _state = MutableStateFlow(ReportsUiState())
     val state = _state.asStateFlow()
     val permissions = session.permissions
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+    val customers = customerRepository.observeAll("")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun select(kind: ReportKind) { _state.value = _state.value.copy(kind = kind); refresh() }
     fun setDate(d: LocalDate) { _state.value = _state.value.copy(date = d); refresh() }
     fun setFrom(d: LocalDate) { _state.value = _state.value.copy(from = d); refresh() }
     fun setTo(d: LocalDate) { _state.value = _state.value.copy(to = d); refresh() }
+    fun setCustomer(id: String) { _state.value = _state.value.copy(customerId = id); refresh() }
 
     fun refresh() {
         val s = _state.value
@@ -104,12 +120,69 @@ class ReportsViewModel @Inject constructor(
                     s.copy(debts = repository.openDebts())
                 ReportKind.PAYMENTS ->
                     s.copy(payments = repository.payments(s.from, s.to))
+                ReportKind.BY_CUSTOMER -> {
+                    if (s.customerId.isBlank()) s else {
+                        val r = repository.byCustomer(s.customerId)
+                        s.copy(bookings = r.bookings, tasaheel = r.tasaheel, debts = r.debts)
+                    }
+                }
                 ReportKind.BY_DATE -> {
                     val r = repository.byDateRange(s.from, s.to)
-                    s.copy(bookings = r.bookings, debts = r.debts, payments = r.payments)
+                    s.copy(bookings = r.bookings, tasaheel = r.tasaheel,
+                        debts = r.debts, payments = r.payments)
                 }
             }
         }
+    }
+
+    /** تصدير التقرير المعروض حاليًا إلى PDF ومشاركته */
+    fun exportPdf(customerName: String = "") {
+        val s = _state.value
+        val lines = buildList {
+            when (s.kind) {
+                ReportKind.DAILY_PROFIT, ReportKind.MONTHLY_PROFIT -> s.profit?.let { p ->
+                    add("أرباح الطيران" to formatMoney(p.bookingsProfit))
+                    add("أرباح تساهيل" to formatMoney(p.tasaheelProfit))
+                    add("عمولات المدفوعات" to formatMoney(p.paymentsProfit))
+                    add("الإجمالي" to formatMoney(p.total))
+                }
+                ReportKind.CUSTOMER_BALANCES -> s.balances.forEach {
+                    add(it.name to formatMoney(it.remaining))
+                }
+                ReportKind.UPCOMING_BOOKINGS -> s.bookings.forEach {
+                    add("${it.customerName} | ${it.fromAirport} - ${it.toAirport}"
+                        to "${formatDate(it.departAt)} ${it.departTime}")
+                }
+                ReportKind.OPEN_DEBTS -> s.debts.forEach {
+                    add("${it.partyName} (${it.status.arabic})" to formatMoney(it.remaining))
+                }
+                ReportKind.PAYMENTS -> s.payments.forEach {
+                    add("${it.payeeName} (${it.category.arabic})"
+                        to "${formatDate(it.date)} | ${formatMoney(it.amountEgp)}")
+                }
+                ReportKind.BY_CUSTOMER, ReportKind.BY_DATE -> {
+                    s.bookings.forEach {
+                        add("حجز: ${it.customerName} ${it.fromAirport}-${it.toAirport}"
+                            to "${formatDate(it.departAt)} | متبقي ${formatMoney(it.remaining)}")
+                    }
+                    s.tasaheel.forEach {
+                        add("تساهيل: ${it.name} (${it.consulate})"
+                            to "${formatDate(it.date)} | متبقي ${formatMoney(it.remaining)}")
+                    }
+                    s.payments.forEach {
+                        add("دفعة: ${it.payeeName}" to "${formatDate(it.date)} | ${formatMoney(it.amountEgp)}")
+                    }
+                    s.debts.forEach {
+                        add("دين: ${it.partyName}" to "متبقي ${formatMoney(it.remaining)}")
+                    }
+                }
+            }
+        }
+        val title = when (s.kind) {
+            ReportKind.BY_CUSTOMER -> "تقرير ${s.kind.arabic}: $customerName"
+            else -> "تقرير ${s.kind.arabic}"
+        }
+        viewModelScope.launch { pdfExporter.exportAndShare(title, lines) }
     }
 }
 
@@ -123,12 +196,23 @@ private fun Long.toLocalDate(): LocalDate =
 fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val permissions by viewModel.permissions.collectAsStateWithLifecycle()
+    val customers by viewModel.customers.collectAsStateWithLifecycle()
     val canSeeProfits = Permission.VIEW_PROFITS in permissions
+    val selectedCustomer = customers.firstOrNull { it.id == state.customerId }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
     Column(Modifier.fillMaxSize()) {
-        Text("التقارير", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("التقارير", style = MaterialTheme.typography.titleLarge)
+            OutlinedButton(onClick = { viewModel.exportPdf(selectedCustomer?.name.orEmpty()) }) {
+                Icon(Icons.Default.PictureAsPdf, contentDescription = null)
+                Text("  PDF")
+            }
+        }
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -204,6 +288,32 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         }
                     }
                 }
+                ReportKind.BY_CUSTOMER -> {
+                    item {
+                        AppDropdown(
+                            label = "اختر العميل",
+                            options = customers,
+                            selected = selectedCustomer,
+                            optionLabel = { it.name },
+                            onSelect = { viewModel.setCustomer(it.id) },
+                        )
+                    }
+                    if (state.customerId.isBlank()) {
+                        item { EmptyState("اختر عميلًا لعرض تقريره الكامل") }
+                    } else {
+                        item {
+                            val total = state.bookings.sumOf { it.remaining } +
+                                state.tasaheel.sumOf { it.remaining } +
+                                state.debts.sumOf { it.remaining }
+                            Card(Modifier.fillMaxWidth()) {
+                                Row(Modifier.fillMaxWidth().padding(14.dp)) {
+                                    InfoRow("إجمالي المتبقي عليه", formatMoney(total), DebtRed)
+                                }
+                            }
+                        }
+                        mixedOperations(state)
+                    }
+                }
                 ReportKind.PAYMENTS, ReportKind.BY_DATE -> {
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -214,41 +324,67 @@ fun ReportsScreen(viewModel: ReportsViewModel = hiltViewModel()) {
                         }
                     }
                     if (state.kind == ReportKind.BY_DATE) {
-                        item { Text("الحجوزات (${state.bookings.size})",
-                            style = MaterialTheme.typography.titleMedium) }
-                        items(state.bookings, key = { "b${it.id}" }) { b ->
+                        mixedOperations(state)
+                    } else {
+                        if (state.payments.isEmpty()) item { EmptyState("لا توجد مدفوعات في الفترة") }
+                        items(state.payments, key = { "p${it.id}" }) { p ->
                             Card(Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(12.dp)) {
-                                    Text(b.customerName, fontWeight = FontWeight.Bold)
-                                    InfoRow("${b.fromAirport} ← ${b.toAirport}", formatDate(b.departAt))
-                                }
-                            }
-                        }
-                    }
-                    item { Text("المدفوعات (${state.payments.size})",
-                        style = MaterialTheme.typography.titleMedium) }
-                    items(state.payments, key = { "p${it.id}" }) { p ->
-                        Card(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(12.dp)) {
-                                Text(p.payeeName, fontWeight = FontWeight.Bold)
-                                InfoRow(p.category.arabic,
-                                    "${formatDate(p.date)} • ${formatMoney(p.amountEgp)}")
-                            }
-                        }
-                    }
-                    if (state.kind == ReportKind.BY_DATE) {
-                        item { Text("المديونيات (${state.debts.size})",
-                            style = MaterialTheme.typography.titleMedium) }
-                        items(state.debts, key = { "d${it.id}" }) { d ->
-                            Card(Modifier.fillMaxWidth()) {
-                                Column(Modifier.padding(12.dp)) {
-                                    Text(d.partyName, fontWeight = FontWeight.Bold)
-                                    InfoRow(d.status.arabic, formatMoney(d.remaining))
+                                    Text(p.payeeName, fontWeight = FontWeight.Bold)
+                                    InfoRow(p.category.arabic,
+                                        "${formatDate(p.date)} • ${formatMoney(p.amountEgp)}")
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** أقسام الحجوزات/تساهيل/المدفوعات/الديون المشتركة بين تقريري العميل والتاريخ */
+private fun androidx.compose.foundation.lazy.LazyListScope.mixedOperations(state: ReportsUiState) {
+    item { Text("الحجوزات (${state.bookings.size})",
+        style = androidx.compose.material3.MaterialTheme.typography.titleMedium) }
+    items(state.bookings, key = { "b${it.id}" }) { b ->
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(12.dp)) {
+                Text(b.customerName, fontWeight = FontWeight.Bold)
+                InfoRow("${b.fromAirport} ← ${b.toAirport}",
+                    "${formatDate(b.departAt)} • متبقي ${formatMoney(b.remaining)}")
+            }
+        }
+    }
+    item { Text("تساهيل (${state.tasaheel.size})",
+        style = androidx.compose.material3.MaterialTheme.typography.titleMedium) }
+    items(state.tasaheel, key = { "t${it.id}" }) { t ->
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(12.dp)) {
+                Text(t.name, fontWeight = FontWeight.Bold)
+                InfoRow(t.consulate, "${formatDate(t.date)} • متبقي ${formatMoney(t.remaining)}")
+            }
+        }
+    }
+    if (state.payments.isNotEmpty()) {
+        item { Text("المدفوعات (${state.payments.size})",
+            style = androidx.compose.material3.MaterialTheme.typography.titleMedium) }
+        items(state.payments, key = { "p${it.id}" }) { p ->
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    Text(p.payeeName, fontWeight = FontWeight.Bold)
+                    InfoRow(p.category.arabic, "${formatDate(p.date)} • ${formatMoney(p.amountEgp)}")
+                }
+            }
+        }
+    }
+    item { Text("المديونيات (${state.debts.size})",
+        style = androidx.compose.material3.MaterialTheme.typography.titleMedium) }
+    items(state.debts, key = { "d${it.id}" }) { d ->
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(12.dp)) {
+                Text(d.partyName, fontWeight = FontWeight.Bold)
+                InfoRow(d.status.arabic, "متبقي ${formatMoney(d.remaining)}")
             }
         }
     }
