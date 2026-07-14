@@ -1,7 +1,6 @@
 name: Build Release APK + Auto Release
 
 on:
-  # شغّل عند tag جديد زي v1.0.0
   push:
     tags:
       - 'v*'
@@ -14,51 +13,31 @@ jobs:
       contents: write
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Java 17
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          cache: 'gradle'
 
-      - name: 🎯 Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-          cache: true
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: 📦 Get Dependencies
-        run: flutter pub get
+      - name: Inject google-services.json (if secret set)
+        if: ${{ vars.HAS_GOOGLE_SERVICES == 'true' }}
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: echo "$GOOGLE_SERVICES_JSON" | base64 -d > app/google-services.json
 
-      - name: 🏗️ Build Release APK
-        run: flutter build apk --release --split-per-abi
+      # للنسخة النهائية وقّع بمفتاحك: أضف Secrets باسم KEYSTORE_B64
+      # وKEYSTORE_PASSWORD وKEY_ALIAS وKEY_PASSWORD ثم فعّل خطوة التوقيع.
+      - name: Build release APK (unsigned)
+        run: ./gradlew assembleRelease --stacktrace
 
-      - name: 📤 Create GitHub Release
+      - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-            build/app/outputs/flutter-apk/app-x86_64-release.apk
-          draft: false
-          prerelease: false
+          files: app/build/outputs/apk/release/app-release-unsigned.apk
           generate_release_notes: true
-          body: |
-            ## 🌍 Elmahdi Travel Suite v${{ github.ref_name }}
-
-            تطبيق إدارة شركة السياحة والسفر - Sameh Abdullah Travel & Tourism Agency
-
-            ### 📱 APKs المتاحة:
-            - **arm64-v8a** — الأجهزة الحديثة (موصى به)
-            - **armeabi-v7a** — الأجهزة القديمة
-            - **x86_64** — المحاكيات والأجهزة النادرة
-
-            ### ✅ الـ Stack:
-            - Flutter 3.24 + Dart
-            - Drift (SQLite) + Supabase
-            - Riverpod + GoRouter
-            - PDF generation + fl_chart

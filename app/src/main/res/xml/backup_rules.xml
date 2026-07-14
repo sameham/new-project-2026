@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Room DB is excluded from Android auto-backup: the app has its own
+     cloud backup (Firestore sync + manual JSON backups to Firebase Storage). -->
+<full-backup-content>
+    <exclude domain="database" path="travel_suite.db" />
+</full-backup-content>
